@@ -28,3 +28,42 @@ In today’s competitive job market, a standout resume is essential for job seek
 - Resource Library: Articles, videos, and guides on job searching and career development.
 
 ## Technology Stack 🧰
+**Frontend**:
+- React.js + Redux Toolkit
+- Material-UI (MUI) for UI
+- React Router for routing
+- Formik + Yup for forms
+- react-i18next for multi-language
+
+**Backend**:
+- Django + Django Rest Framework
+- Django AllAuth (signup, email verification, LinkedIn login)
+- Celery + Redis (background tasks like emails, resume generation)
+- Django Channels (WebSocket for live updates)
+  
+**Database**:
+- PostgreSQL (main DB)
+- Redis (cache + queue broker)
+  
+**Storage**:
+- AWS S3 (resume files, user uploads)
+  
+**Authentication**:
+- JWT (SimpleJWT) for secure login
+- OAuth 2.0 for LinkedIn, Google login
+  
+**Resume Generation**:
+- Python-docx (Word)
+- WeasyPrint or wkhtmltopdf (PDF)
+  
+**Deployment**:
+- Docker + AWS EC2 / ECS
+- GitHub Actions (CI/CD)
+  
+**Analytics & Monitoring**:
+- Google Analytics, PostHog (user tracking)
+- Sentry (error monitoring)
+  
+**Notifications**:
+- Firebase Cloud Messaging (push notifications)
+- SendGrid or AWS SES (emails)
