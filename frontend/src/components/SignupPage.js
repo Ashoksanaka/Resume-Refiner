@@ -66,14 +66,30 @@ const SignupForm = () => {
     
     setIsLoading(true);
     
-    // Simulate API call to send OTP
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // API call to send OTP
+      const response = await fetch('/api/signup/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send OTP');
+      }
+
+      const data = await response.json();
+      
       setOtpSent(true);
       setStep(2);
       startCountdown();
+      
     } catch (error) {
-      setErrors({...errors, form: 'Failed to send OTP. Please try again.'});
+      setErrors({...errors, form: error.message || 'Failed to send OTP. Please try again.'});
     } finally {
       setIsLoading(false);
     }
@@ -125,13 +141,41 @@ const SignupForm = () => {
     
     setIsLoading(true);
     
-    // Simulate API call to verify OTP and create account
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      // On success, redirect or show success message
-      alert('Account created successfully!');
+      // API call to verify OTP with email
+      const response = await fetch('/api/verify-otp/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email, 
+          otp: formData.otp,     
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'OTP verification failed');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        // Store user data or token if returned
+        if (data.token) {
+          localStorage.setItem('authToken', data.token);
+        }
+        
+      } else {
+        throw new Error(data.message || 'OTP verification failed');
+      }
+      
     } catch (error) {
-      setErrors({...errors, form: 'OTP verification failed. Please try again.'});
+      setErrors({
+        ...errors, 
+        form: error.message || 'OTP verification failed. Please try again.',
+        otp: 'Invalid OTP code' // Add specific OTP field error if needed
+      });
     } finally {
       setIsLoading(false);
     }
@@ -149,7 +193,7 @@ const SignupForm = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div className="bg-gray-200 py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {errors.form && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
               <div className="flex">
