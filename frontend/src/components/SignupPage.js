@@ -68,19 +68,24 @@ const SignupForm = () => {
     
     try {
       // API call to send OTP
-      const response = await fetch('/api/signup/', {
+      const response = await fetch('http://localhost:8000/api/send-otp/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: formData.email,
+          fullName: formData.fullName,
+          password: formData.password,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send OTP');
+        const errorData = await response.json();
+        console.error('Send OTP error:', errorData);
+        throw new Error(errorData.message || 'Failed to send OTP');
       }
+      
 
       const data = await response.json();
       
@@ -143,7 +148,7 @@ const SignupForm = () => {
     
     try {
       // API call to verify OTP with email
-      const response = await fetch('/api/verify-otp/', {
+      const response = await fetch('http://localhost:8000/api/verify-otp/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -161,11 +166,33 @@ const SignupForm = () => {
 
       const data = await response.json();
       if (data.success) {
-        // Store user data or token if returned
-        if (data.token) {
-          localStorage.setItem('authToken', data.token);
+        // After successful OTP verification, submit full form data to backend
+        const submitResponse = await fetch('http://localhost:8000/api/register/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fullName: formData.fullName,
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
+
+        if (!submitResponse.ok) {
+          const submitErrorData = await submitResponse.json();
+          throw new Error(submitErrorData.message || 'Registration failed');
         }
-        
+
+        const submitData = await submitResponse.json();
+
+        // Store user data or token if returned from registration
+        if (submitData.token) {
+          localStorage.setItem('authToken', submitData.token);
+        }
+
+        // Optionally, redirect or update UI on successful registration
+        // For example, setStep(3) or show success message
       } else {
         throw new Error(data.message || 'OTP verification failed');
       }
