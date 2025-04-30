@@ -8,12 +8,14 @@ from django.utils import timezone  # Import timezone from Django
 class User(AbstractUser):
     email = models.EmailField(unique=True)
     is_verified = models.BooleanField(default=False)
+    full_name = models.CharField(max_length=255, blank=True)  # Keep this field
     groups = models.ManyToManyField(
         Group, related_name='customuser_set', blank=True
     )
     user_permissions = models.ManyToManyField(
         Permission, related_name='customuser_permission_set', blank=True
     )
+    
 
 
 class EmailOTP(models.Model):

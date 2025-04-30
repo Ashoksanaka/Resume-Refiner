@@ -1,38 +1,47 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaFileAlt, FaPlus, FaHistory, FaUserCircle, FaSearch, FaBell, FaQuestionCircle } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { authenticatedApiCall } from '../utils/api';
 
 const UserDashboard = () => {
-  // Sample data - replace with actual user data from your backend
-  const recentTemplates = [
-    {
-      id: 1,
-      name: 'Professional Blue',
-      type: 'resume',
-      lastUsed: '2 days ago',
-      thumbnail: 'https://images.unsplash.com/photo-1625014618427-fbc980b974f5?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
-    },
-    {
-      id: 2,
-      name: 'Modern Red',
-      type: 'resume',
-      lastUsed: '1 week ago',
-      thumbnail: 'https://images.unsplash.com/photo-1586287011575-a23134f797f9?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
-    },
-    {
-      id: 3,
-      name: 'Executive',
-      type: 'cover letter',
-      lastUsed: '3 weeks ago',
-      thumbnail: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80'
-    },
-  ];
+  const [userData, setUserData] = useState(null);
+  const [recentTemplates, setRecentTemplates] = useState([]);
+  const [stats, setStats] = useState({});
+  const navigate = useNavigate();
 
-  const stats = {
-    resumesCreated: 12,
-    coverLettersCreated: 5,
-    applicationsSubmitted: 8,
-    atsScore: 92
+  useEffect(() => {
+    async function fetchUserData() {
+      try {
+        const response = await authenticatedApiCall('/profiles/dashboard', { method: 'GET' });
+        if (!response.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+        const data = await response.json();
+        setUserData(data.user);
+        setRecentTemplates(data.recentTemplates || []);
+        setStats(data.stats || {});
+      } catch (error) {
+        console.error(error);
+        // If unauthorized or error, redirect to login
+        //navigate('/login');
+      }
+    }
+    fetchUserData();
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('fullName');
+    navigate('/login');
   };
+
+  if (!userData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading user data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -53,11 +62,15 @@ const UserDashboard = () => {
               <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <FaQuestionCircle className="h-5 w-5" />
               </button>
-              <div className="ml-3 relative">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-700">John Doe</span>
-                  <FaUserCircle className="h-8 w-8 text-gray-400" />
-                </div>
+              <div className="ml-3 relative flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700">{userData.fullName}</span>
+                <FaUserCircle className="h-8 w-8 text-gray-400" />
+                <button
+                  onClick={handleLogout}
+                  className="ml-4 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Logout
+                </button>
               </div>
             </div>
           </div>
@@ -68,7 +81,7 @@ const UserDashboard = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Banner */}
         <div className="bg-blue-600 rounded-lg shadow-md p-6 mb-8 text-white">
-          <h1 className="text-2xl font-bold mb-2">Welcome back, John!</h1>
+          <h1 className="text-2xl font-bold mb-2">Welcome back, {userData.fullName}!</h1>
           <p className="opacity-90">Ready to create your next job-winning resume or cover letter?</p>
         </div>
 

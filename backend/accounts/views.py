@@ -20,8 +20,7 @@ def signup(request):
     """Create a new user."""
     email = request.data.get("email")
     password = request.data.get("password")
-    full_name = request.data.get("full_name")
-
+    full_name = request.data.get("fullName")
     if not email or not password:
         return Response({"error": "Email and password are required"}, status=400)
 
@@ -34,6 +33,7 @@ def signup(request):
         return Response({"error": "Email not verified. Please verify your email first."}, status=400)
 
     try:
+        print(f"Creating user with email: {email}, password: {password}, full_name: {full_name}")
         user = User.objects.create_user(
             username=email,
             email=email, 
@@ -42,7 +42,7 @@ def signup(request):
             is_verified=True
         )
         user.save()
-        return Response({"message": "User created successfully."})
+        return Response({"message": "User created successfully.You can now log in."}, status=201)
     except Exception as e:
         return Response({"error": str(e)}, status=500)
 
@@ -65,16 +65,17 @@ def send_email_verification(request):
         email_otp.save()
         
         # Send OTP via email
-        subject = 'Just-Ease Email Verification'
+        subject = 'ResumePro Email Verification'
         message = f'Your verification OTP is: {otp}. It will expire in 10 minutes.'
         from_email = settings.DEFAULT_FROM_EMAIL
         recipient_list = [email]
-        
+        print(f"Sending email to {email} with OTP: {otp}")
         send_mail(subject, message, from_email, recipient_list, fail_silently=False)
         
         return Response({"message": "Verification OTP sent to your email."})
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+    
 
 
 
@@ -83,7 +84,6 @@ def verify_email_otp(request):
     """Verify OTP entered by the user."""
     email = request.data.get("email")
     otp = request.data.get("otp")
-
     if not email or not otp:
         return Response({"error": "Email and OTP are required"}, status=400)
 
@@ -99,9 +99,8 @@ def verify_email_otp(request):
         
         if email_otp.otp_code != otp:
             return Response({"error": "Invalid OTP"}, status=400)
-        
         # OTP is valid
-        return Response({"message": "Email verified successfully."})
+        return Response({"success": True,"message": "OTP verified successfully"})
     except Exception as e:
         return Response({"error": str(e)}, status=500)
 
@@ -141,8 +140,7 @@ def login_user(request):
             "user": {
                 "id": user.id,
                 "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name
+                "fullName": user.full_name,
             }
         })
     except Exception as e:

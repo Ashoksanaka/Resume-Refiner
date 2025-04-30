@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { FaUser, FaEnvelope, FaLock, FaCheck, FaSpinner } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const SignupForm = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -15,6 +17,7 @@ const SignupForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -68,7 +71,7 @@ const SignupForm = () => {
     
     try {
       // API call to send OTP
-      const response = await fetch('http://localhost:8000/api/send-otp/', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/accounts/send-otp/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,18 +86,15 @@ const SignupForm = () => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Send OTP error:', errorData);
-        throw new Error(errorData.message || 'Failed to send OTP');
+        throw new Error(errorData.message || 'User with this email already exists.');
       }
-      
-
-      const data = await response.json();
       
       setOtpSent(true);
       setStep(2);
       startCountdown();
       
     } catch (error) {
-      setErrors({...errors, form: error.message || 'Failed to send OTP. Please try again.'});
+      setErrors({...errors, form: error.message || 'User with this email already exists.'});
     } finally {
       setIsLoading(false);
     }
@@ -148,7 +148,7 @@ const SignupForm = () => {
     
     try {
       // API call to verify OTP with email
-      const response = await fetch('http://localhost:8000/api/verify-otp/', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/accounts/verify-otp/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,8 +166,10 @@ const SignupForm = () => {
 
       const data = await response.json();
       if (data.success) {
+        setSuccessMessage(data.message || 'OTP verified successfully');
+
         // After successful OTP verification, submit full form data to backend
-        const submitResponse = await fetch('http://localhost:8000/api/register/', {
+        const submitResponse = await fetch(`${process.env.REACT_APP_API_URL}/accounts/signup/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -185,14 +187,15 @@ const SignupForm = () => {
         }
 
         const submitData = await submitResponse.json();
-
-        // Store user data or token if returned from registration
+        if (submitData.message) {
+          setSuccessMessage(submitData.message); // Show success message after user creation
+          setTimeout(() => {
+            navigate('/login');
+          }, 4000);
+        }
         if (submitData.token) {
           localStorage.setItem('authToken', submitData.token);
         }
-
-        // Optionally, redirect or update UI on successful registration
-        // For example, setStep(3) or show success message
       } else {
         throw new Error(data.message || 'OTP verification failed');
       }
@@ -203,6 +206,7 @@ const SignupForm = () => {
         form: error.message || 'OTP verification failed. Please try again.',
         otp: 'Invalid OTP code' // Add specific OTP field error if needed
       });
+      setSuccessMessage('');
     } finally {
       setIsLoading(false);
     }
@@ -231,6 +235,20 @@ const SignupForm = () => {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-red-700">{errors.form}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          {successMessage && (
+            <div className="mb-4 bg-green-50 border-l-4 border-green-500 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-4.293l4.146-4.147a1 1 0 00-1.414-1.414L9 11.586 7.707 10.293a1 1 0 00-1.414 1.414L9 13.707z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-green-700">{successMessage}</p>
                 </div>
               </div>
             </div>
@@ -331,7 +349,7 @@ const SignupForm = () => {
                   {isLoading ? (
                     <>
                       <FaSpinner className="animate-spin mr-2 h-4 w-4" />
-                      Sending OTP...
+                      Sending verification code...
                     </>
                   ) : 'Continue with Email Verification'}
                 </button>

@@ -54,19 +54,38 @@ const LoginPage = () => {
     
     setIsLoading(true);
     
-    // Simulate API call to login
     try {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        // On success, redirect to dashboard
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/accounts/login/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+      console.log('Response:', response);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Invalid email or password. Please try again.');
+      }
+      const data = await response.json();
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+        if (data.user && data.user.email) {
+          localStorage.setItem('username', data.user.email);
+        }
         navigate('/dashboard');
-    } 
-    catch (error) {
-        setErrors({...errors, form: 'Invalid email or password. Please try again.'});
-    } 
-    finally {
-        setIsLoading(false);
+      } else {
+        throw new Error('Login failed. No token received.');
+      }
+    } catch (error) {
+      setErrors({...errors, form: error.message});
+    } finally {
+      setIsLoading(false);
     }
- };
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
